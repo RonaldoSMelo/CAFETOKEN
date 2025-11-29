@@ -1,0 +1,30 @@
+{
+  "name": "cafetoken-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for CAFÉTOKEN - Tokenized Coffee Microlots",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:mumbai": "hardhat run scripts/deploy.js --network polygonMumbai",
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon",
+    "verify": "hardhat verify --network polygon",
+    "node": "hardhat node"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.1",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.19.4"
+  },
+  "keywords": [
+    "nft",
+    "coffee",
+    "blockchain",
+    "polygon",
+    "erc721"
+  ],
+  "author": "CAFÉTOKEN",
+  "license": "MIT"
+}
+

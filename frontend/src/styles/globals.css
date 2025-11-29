@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-cafe-800;
+  }
+  
+  body {
+    @apply bg-cafe-950 text-cafe-100;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  ::selection {
+    @apply bg-gold-500/30 text-gold-100;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-cafe-900;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-cafe-700 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-cafe-600;
+  }
+}
+
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-cafe-950 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-cafe-950 hover:from-gold-500 hover:via-gold-400 hover:to-gold-500 focus:ring-gold-500 shadow-gold hover:shadow-gold-lg;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-cafe-800 text-cafe-100 hover:bg-cafe-700 border border-cafe-700 focus:ring-cafe-600;
+  }
+  
+  .btn-outline {
+    @apply btn bg-transparent text-gold-400 border-2 border-gold-500/50 hover:bg-gold-500/10 hover:border-gold-400 focus:ring-gold-500;
+  }
+  
+  .btn-ghost {
+    @apply btn bg-transparent text-cafe-300 hover:text-cafe-100 hover:bg-cafe-800/50;
+  }
+  
+  /* Card styles */
+  .card {
+    @apply bg-cafe-900/50 backdrop-blur-sm border border-cafe-800 rounded-2xl overflow-hidden;
+  }
+  
+  .card-hover {
+    @apply card transition-all duration-300 hover:border-gold-500/30 hover:shadow-gold;
+  }
+  
+  /* Input styles */
+  .input {
+    @apply w-full px-4 py-3 bg-cafe-900 border border-cafe-700 rounded-lg text-cafe-100 placeholder-cafe-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors;
+  }
+  
+  .input-label {
+    @apply block text-sm font-medium text-cafe-300 mb-2;
+  }
+  
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-gold {
+    @apply badge bg-gold-500/20 text-gold-400 border border-gold-500/30;
+  }
+  
+  .badge-success {
+    @apply badge bg-success/20 text-success border border-success/30;
+  }
+  
+  .badge-warning {
+    @apply badge bg-warning/20 text-warning border border-warning/30;
+  }
+  
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-gold-300 via-gold-400 to-gold-300;
+  }
+  
+  /* Gold border glow */
+  .border-glow {
+    @apply relative;
+  }
+  
+  .border-glow::before {
+    content: '';
+    @apply absolute inset-0 rounded-2xl bg-gradient-to-r from-gold-500/0 via-gold-500/20 to-gold-500/0 opacity-0 transition-opacity duration-300;
+  }
+  
+  .border-glow:hover::before {
+    @apply opacity-100;
+  }
+  
+  /* Section container */
+  .section {
+    @apply py-16 md:py-24;
+  }
+  
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Glass effect */
+  .glass {
+    @apply bg-cafe-900/30 backdrop-blur-xl border border-cafe-800/50;
+  }
+  
+  /* Shimmer effect for loading */
+  .shimmer {
+    @apply bg-gradient-to-r from-cafe-800 via-cafe-700 to-cafe-800 bg-[length:200%_100%] animate-shimmer;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Text balance for better readability */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Gradient backgrounds */
+  .bg-mesh {
+    background-image: 
+      radial-gradient(at 40% 20%, rgba(196, 154, 58, 0.1) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, rgba(196, 154, 58, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, rgba(196, 154, 58, 0.05) 0px, transparent 50%),
+      radial-gradient(at 80% 50%, rgba(196, 154, 58, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(196, 154, 58, 0.1) 0px, transparent 50%);
+  }
+}
+
