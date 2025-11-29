@@ -1,178 +1,154 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Coffee } from 'lucide-react'
+import { Search, RefreshCw } from 'lucide-react'
+import { BrowserProvider, Contract, formatEther } from 'ethers'
 import NFTGrid from '../components/nft/NFTGrid'
 import FilterBar from '../components/marketplace/FilterBar'
+import Button from '../components/ui/Button'
 import type { MarketplaceFilters, NFTWithListing } from '../types'
 
-// Mock data para demonstração
-const mockNFTs: NFTWithListing[] = [
-  {
-    tokenId: 1,
-    lotCode: 'CAF-2024-MG-001',
-    producer: '0x1234567890123456789012345678901234567890',
-    producerName: 'João Silva',
-    farmName: 'Sítio Alto da Serra',
-    weightKg: 30,
-    scaScore: 8650,
-    harvestTimestamp: 1717200000,
-    qualityReportHash: 'QmXyz123',
-    redeemed: false,
-    mintedAt: 1717200000,
-    listing: {
-      tokenId: 1,
-      seller: '0x1234567890123456789012345678901234567890',
-      price: BigInt('500000000000000000'),
-      priceFormatted: '0.5',
-      active: true,
-    },
-    metadata: {
-      name: 'Bourbon Amarelo #001',
-      description: 'Microlote excepcional de Bourbon Amarelo',
-      image: '/placeholder-coffee.jpg',
-      attributes: [],
-    },
-  },
-  {
-    tokenId: 2,
-    lotCode: 'CAF-2024-MG-002',
-    producer: '0x2345678901234567890123456789012345678901',
-    producerName: 'Maria Santos',
-    farmName: 'Fazenda Santa Clara',
-    weightKg: 25,
-    scaScore: 8800,
-    harvestTimestamp: 1717200000,
-    qualityReportHash: 'QmAbc456',
-    redeemed: false,
-    mintedAt: 1717200000,
-    listing: {
-      tokenId: 2,
-      seller: '0x2345678901234567890123456789012345678901',
-      price: BigInt('750000000000000000'),
-      priceFormatted: '0.75',
-      active: true,
-    },
-    metadata: {
-      name: 'Geisha Natural #002',
-      description: 'Geisha de altitude excepcional',
-      image: '/placeholder-coffee.jpg',
-      attributes: [],
-    },
-  },
-  {
-    tokenId: 3,
-    lotCode: 'CAF-2024-ES-003',
-    producer: '0x3456789012345678901234567890123456789012',
-    producerName: 'Pedro Costa',
-    farmName: 'Sítio Boa Vista',
-    weightKg: 20,
-    scaScore: 8550,
-    harvestTimestamp: 1717200000,
-    qualityReportHash: 'QmDef789',
-    redeemed: false,
-    mintedAt: 1717200000,
-    listing: {
-      tokenId: 3,
-      seller: '0x3456789012345678901234567890123456789012',
-      price: BigInt('400000000000000000'),
-      priceFormatted: '0.4',
-      active: true,
-    },
-    metadata: {
-      name: 'Catuaí Vermelho #003',
-      description: 'Catuaí de processo honey',
-      image: '/placeholder-coffee.jpg',
-      attributes: [],
-    },
-  },
-  {
-    tokenId: 4,
-    lotCode: 'CAF-2024-MG-004',
-    producer: '0x4567890123456789012345678901234567890123',
-    producerName: 'Ana Oliveira',
-    farmName: 'Fazenda Esperança',
-    weightKg: 35,
-    scaScore: 9100,
-    harvestTimestamp: 1717200000,
-    qualityReportHash: 'QmGhi012',
-    redeemed: false,
-    mintedAt: 1717200000,
-    listing: {
-      tokenId: 4,
-      seller: '0x4567890123456789012345678901234567890123',
-      price: BigInt('1200000000000000000'),
-      priceFormatted: '1.2',
-      active: true,
-    },
-    metadata: {
-      name: 'Geisha Lavado #004',
-      description: 'Geisha de competição, pontuação 91+',
-      image: '/placeholder-coffee.jpg',
-      attributes: [],
-    },
-  },
-  {
-    tokenId: 5,
-    lotCode: 'CAF-2024-BA-005',
-    producer: '0x5678901234567890123456789012345678901234',
-    producerName: 'Carlos Mendes',
-    farmName: 'Sítio Recanto',
-    weightKg: 28,
-    scaScore: 8400,
-    harvestTimestamp: 1717200000,
-    qualityReportHash: 'QmJkl345',
-    redeemed: false,
-    mintedAt: 1717200000,
-    listing: {
-      tokenId: 5,
-      seller: '0x5678901234567890123456789012345678901234',
-      price: BigInt('350000000000000000'),
-      priceFormatted: '0.35',
-      active: true,
-    },
-    metadata: {
-      name: 'Mundo Novo #005',
-      description: 'Mundo Novo de terroir único',
-      image: '/placeholder-coffee.jpg',
-      attributes: [],
-    },
-  },
-  {
-    tokenId: 6,
-    lotCode: 'CAF-2024-MG-006',
-    producer: '0x6789012345678901234567890123456789012345',
-    producerName: 'Lucia Ferreira',
-    farmName: 'Fazenda Primavera',
-    weightKg: 22,
-    scaScore: 8750,
-    harvestTimestamp: 1717200000,
-    qualityReportHash: 'QmMno678',
-    redeemed: false,
-    mintedAt: 1717200000,
-    listing: {
-      tokenId: 6,
-      seller: '0x6789012345678901234567890123456789012345',
-      price: BigInt('650000000000000000'),
-      priceFormatted: '0.65',
-      active: true,
-    },
-    metadata: {
-      name: 'Bourbon Vermelho #006',
-      description: 'Bourbon fermentado anaeróbico',
-      image: '/placeholder-coffee.jpg',
-      attributes: [],
-    },
-  },
+const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+const CONTRACT_ABI = [
+  'function getTotalMinted() view returns (uint256)',
+  'function getCoffeeLot(uint256 tokenId) view returns (tuple(string lotCode, address producer, uint256 weightKg, uint256 scaScore, uint256 harvestTimestamp, string qualityReportHash, bool redeemed, uint256 mintedAt))',
+  'function getListing(uint256 tokenId) view returns (tuple(address seller, uint256 price, bool active))',
+  'function ownerOf(uint256 tokenId) view returns (address)',
+  'function tokenURI(uint256 tokenId) view returns (string)',
 ]
 
 export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<MarketplaceFilters>({})
-  const [isLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [nfts, setNfts] = useState<NFTWithListing[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  // Filter and sort NFTs
+  // Função para buscar NFTs da blockchain
+  const fetchNFTs = async () => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      let provider
+      
+      // Tentar usar MetaMask, senão usar RPC direto
+      if (window.ethereum) {
+        provider = new BrowserProvider(window.ethereum)
+      } else {
+        // Fallback para RPC direto (read-only)
+        const { JsonRpcProvider } = await import('ethers')
+        provider = new JsonRpcProvider('http://127.0.0.1:8545')
+      }
+      
+      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
+      
+      // Buscar total de NFTs mintados
+      const totalMinted = await contract.getTotalMinted()
+      const total = Number(totalMinted)
+      
+      if (total === 0) {
+        setNfts([])
+        setIsLoading(false)
+        return
+      }
+      
+      // Buscar dados de cada NFT
+      const nftPromises = []
+      for (let i = 1; i <= total; i++) {
+        nftPromises.push(fetchSingleNFT(contract, i))
+      }
+      
+      const fetchedNFTs = await Promise.all(nftPromises)
+      const validNFTs = fetchedNFTs.filter(nft => nft !== null) as NFTWithListing[]
+      
+      setNfts(validNFTs)
+    } catch (err: any) {
+      console.error('Erro ao buscar NFTs:', err)
+      setError('Erro ao conectar com a blockchain. Verifique se o Hardhat está rodando.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Buscar dados de um único NFT
+  const fetchSingleNFT = async (contract: Contract, tokenId: number): Promise<NFTWithListing | null> => {
+    try {
+      const [lot, listing, owner, tokenURI] = await Promise.all([
+        contract.getCoffeeLot(tokenId),
+        contract.getListing(tokenId),
+        contract.ownerOf(tokenId),
+        contract.tokenURI(tokenId),
+      ])
+
+      // Tentar parsear metadata do tokenURI
+      let metadata = {
+        name: `Microlote #${tokenId}`,
+        description: '',
+        image: '/placeholder-coffee.jpg',
+        attributes: [],
+      }
+
+      if (tokenURI.startsWith('data:application/json,')) {
+        try {
+          const jsonStr = decodeURIComponent(tokenURI.replace('data:application/json,', ''))
+          metadata = JSON.parse(jsonStr)
+          if (!metadata.image) metadata.image = '/placeholder-coffee.jpg'
+        } catch (e) {
+          console.warn('Erro ao parsear metadata:', e)
+        }
+      }
+
+      return {
+        tokenId,
+        lotCode: lot.lotCode,
+        producer: lot.producer,
+        farmName: extractFarmFromMetadata(metadata),
+        weightKg: Number(lot.weightKg),
+        scaScore: Number(lot.scaScore),
+        harvestTimestamp: Number(lot.harvestTimestamp),
+        qualityReportHash: lot.qualityReportHash,
+        redeemed: lot.redeemed,
+        mintedAt: Number(lot.mintedAt),
+        listing: {
+          tokenId,
+          seller: listing.seller,
+          price: listing.price,
+          priceFormatted: formatEther(listing.price),
+          active: listing.active,
+        },
+        metadata: {
+          name: metadata.name || `Microlote ${lot.lotCode}`,
+          description: metadata.description || '',
+          image: metadata.image || '/placeholder-coffee.jpg',
+          attributes: metadata.attributes || [],
+        },
+        owner,
+      }
+    } catch (err) {
+      console.error(`Erro ao buscar NFT #${tokenId}:`, err)
+      return null
+    }
+  }
+
+  // Extrair nome da fazenda dos metadados
+  const extractFarmFromMetadata = (metadata: any): string => {
+    if (metadata.attributes) {
+      const farmAttr = metadata.attributes.find(
+        (attr: any) => attr.trait_type === 'Farm' || attr.trait_type === 'Fazenda'
+      )
+      if (farmAttr) return farmAttr.value
+    }
+    return 'Produtor Verificado'
+  }
+
+  // Carregar NFTs ao montar o componente
+  useEffect(() => {
+    fetchNFTs()
+  }, [])
+
+  // Filtrar e ordenar NFTs
   const filteredNFTs = useMemo(() => {
-    let result = [...mockNFTs]
+    let result = [...nfts]
 
     // Search
     if (searchQuery) {
@@ -211,7 +187,7 @@ export default function Marketplace() {
     }
 
     return result
-  }, [searchQuery, filters])
+  }, [nfts, searchQuery, filters])
 
   return (
     <div className="pt-28 pb-16 min-h-screen">
@@ -230,20 +206,44 @@ export default function Marketplace() {
               <p className="text-lg text-cafe-400">
                 Explore e adquira microlotes de café especial brasileiro tokenizados
               </p>
+              {nfts.length > 0 && (
+                <p className="text-sm text-gold-400 mt-2">
+                  🔗 {nfts.length} NFT{nfts.length > 1 ? 's' : ''} na blockchain
+                </p>
+              )}
             </div>
 
-            {/* Search */}
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cafe-500" />
-              <input
-                type="text"
-                placeholder="Buscar lotes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-12"
-              />
+            <div className="flex items-center gap-4">
+              {/* Refresh button */}
+              <Button
+                variant="secondary"
+                onClick={fetchNFTs}
+                disabled={isLoading}
+                leftIcon={<RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />}
+              >
+                Atualizar
+              </Button>
+              
+              {/* Search */}
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cafe-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar lotes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="input pl-12"
+                />
+              </div>
             </div>
           </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="mb-6 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm">
+              ⚠️ {error}
+            </div>
+          )}
 
           {/* Filters */}
           <FilterBar
@@ -258,33 +258,40 @@ export default function Marketplace() {
           nfts={filteredNFTs}
           isLoading={isLoading}
           emptyMessage={
-            searchQuery
+            error
+              ? 'Não foi possível carregar os NFTs'
+              : searchQuery
               ? `Nenhum resultado para "${searchQuery}"`
-              : 'Nenhum microlote disponível no momento'
+              : 'Nenhum microlote tokenizado ainda. Seja o primeiro a criar!'
           }
         />
 
         {/* Empty state CTA */}
-        {filteredNFTs.length === 0 && !isLoading && (
+        {filteredNFTs.length === 0 && !isLoading && !error && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
             className="text-center mt-8"
           >
-            <button
-              onClick={() => {
-                setSearchQuery('')
-                setFilters({})
-              }}
-              className="text-gold-400 hover:text-gold-300 transition-colors"
-            >
-              Limpar filtros e busca
-            </button>
+            {searchQuery || Object.keys(filters).length > 0 ? (
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setFilters({})
+                }}
+                className="text-gold-400 hover:text-gold-300 transition-colors"
+              >
+                Limpar filtros e busca
+              </button>
+            ) : (
+              <a href="/mint" className="text-gold-400 hover:text-gold-300 transition-colors">
+                Criar primeiro NFT →
+              </a>
+            )}
           </motion.div>
         )}
       </div>
     </div>
   )
 }
-
