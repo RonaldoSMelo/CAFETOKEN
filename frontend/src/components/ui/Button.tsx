@@ -1,16 +1,21 @@
-import { forwardRef, ButtonHTMLAttributes } from 'react'
-import { motion, HTMLMotionProps } from 'framer-motion'
+import { forwardRef, ReactNode, MouseEvent } from 'react'
+import { motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
-interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof HTMLMotionProps<'button'>> {
+interface ButtonProps {
   variant?: ButtonVariant
   size?: ButtonSize
   isLoading?: boolean
-  leftIcon?: React.ReactNode
-  rightIcon?: React.ReactNode
+  leftIcon?: ReactNode
+  rightIcon?: ReactNode
+  children?: ReactNode
+  className?: string
+  disabled?: boolean
+  type?: 'button' | 'submit' | 'reset'
+  onClick?: (e: MouseEvent<HTMLButtonElement>) => void
 }
 
 const variants: Record<ButtonVariant, string> = {
@@ -37,13 +42,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       disabled,
       children,
-      ...props
+      type = 'button',
+      onClick,
     },
     ref
   ) => {
     return (
       <motion.button
         ref={ref}
+        type={type}
         whileHover={{ scale: disabled || isLoading ? 1 : 1.02 }}
         whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
         className={`
@@ -56,7 +63,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           ${className}
         `}
         disabled={disabled || isLoading}
-        {...props}
+        onClick={onClick}
       >
         {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -73,4 +80,3 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = 'Button'
 
 export default Button
-

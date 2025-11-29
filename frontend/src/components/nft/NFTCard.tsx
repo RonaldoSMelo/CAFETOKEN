@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, Mountain, Calendar, Scale, Star, Tag } from 'lucide-react'
+import { MapPin, Mountain, Calendar, Scale, Star, Tag, Coffee } from 'lucide-react'
 import Badge from '../ui/Badge'
 import type { NFTWithListing } from '../../types'
 
@@ -28,6 +28,21 @@ export default function NFTCard({ nft, index = 0 }: NFTCardProps) {
     return 'text-cafe-300'
   }
 
+  // Função para pegar valor de um attribute
+  const getAttribute = (traitType: string): string => {
+    const attr = nft.metadata?.attributes?.find(
+      (a: { trait_type: string; value: string }) => a.trait_type === traitType
+    )
+    return attr?.value || ''
+  }
+
+  const region = getAttribute('Region') || getAttribute('State') || 'Brasil'
+  const altitude = getAttribute('Altitude')
+  const farm = getAttribute('Farm')
+
+  // Verificar se a imagem é válida (URL)
+  const hasValidImage = nft.metadata?.image && nft.metadata.image.startsWith('http')
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -38,11 +53,17 @@ export default function NFTCard({ nft, index = 0 }: NFTCardProps) {
         <div className="group card-hover overflow-hidden">
           {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-cafe-800">
-            <img
-              src={nft.metadata?.image || '/placeholder-coffee.jpg'}
-              alt={nft.metadata?.name || `Lote ${nft.lotCode}`}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
+            {hasValidImage ? (
+              <img
+                src={nft.metadata?.image}
+                alt={nft.metadata?.name || `Lote ${nft.lotCode}`}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cafe-800 to-cafe-900">
+                <Coffee className="w-20 h-20 text-cafe-700" />
+              </div>
+            )}
             
             {/* Overlay gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-cafe-950/80 via-transparent to-transparent" />
@@ -78,7 +99,7 @@ export default function NFTCard({ nft, index = 0 }: NFTCardProps) {
                     <span className="text-sm text-cafe-400">Preço</span>
                   </div>
                   <span className="font-mono font-bold text-gold-400">
-                    {formatPrice(nft.listing.priceFormatted)} MATIC
+                    {formatPrice(nft.listing.priceFormatted)} ETH
                   </span>
                 </div>
               </div>
@@ -93,7 +114,7 @@ export default function NFTCard({ nft, index = 0 }: NFTCardProps) {
                 {nft.metadata?.name || `Microlote ${nft.lotCode}`}
               </h3>
               <p className="text-sm text-cafe-400 mt-1">
-                {nft.farmName || 'Produtor verificado'}
+                {farm || 'Produtor verificado'}
               </p>
             </div>
 
@@ -101,11 +122,11 @@ export default function NFTCard({ nft, index = 0 }: NFTCardProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-gold-500/70" />
-                <span className="text-cafe-400 truncate">Minas Gerais</span>
+                <span className="text-cafe-400 truncate">{region}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Mountain className="w-4 h-4 text-gold-500/70" />
-                <span className="text-cafe-400">1.200m</span>
+                <span className="text-cafe-400">{altitude || '-'}m</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4 text-gold-500/70" />

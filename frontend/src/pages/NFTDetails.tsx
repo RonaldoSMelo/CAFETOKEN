@@ -12,7 +12,6 @@ import {
   Scale,
   Star,
   Coffee,
-  Leaf,
   Droplets,
   Award,
   FileText,
@@ -65,6 +64,11 @@ interface NFTData {
     name: string
     description: string
     image: string
+    images?: string[]
+    qualityReport?: string
+    cuppingNotes?: string
+    certifications?: string[]
+    coordinates?: string
     attributes: any[]
   }
 }
@@ -351,7 +355,22 @@ export default function NFTDetails() {
           >
             <Card padding="none" className="overflow-hidden">
               <div className="aspect-square bg-cafe-800 flex items-center justify-center relative group">
-                <Coffee className="w-32 h-32 text-cafe-600" />
+                {nft.metadata?.image && nft.metadata.image.startsWith('http') ? (
+                  <img 
+                    src={nft.metadata.image} 
+                    alt={nft.metadata.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Se a imagem falhar, mostrar ícone de café
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center">
+                    <Coffee className="w-32 h-32 text-cafe-600 mb-4" />
+                    <span className="text-cafe-500 text-sm">Imagem não disponível</span>
+                  </div>
+                )}
                 
                 {/* Status badges */}
                 <div className="absolute top-4 left-4 flex flex-wrap gap-2">
@@ -385,24 +404,156 @@ export default function NFTDetails() {
               </div>
             </Card>
 
+            {/* Gallery - More Images */}
+            {nft.metadata?.images && nft.metadata.images.length > 0 && (
+              <Card>
+                <h3 className="font-display text-lg font-semibold text-cafe-100 mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-gold-500" />
+                  Galeria de Imagens ({nft.metadata.images.length})
+                </h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {nft.metadata.images.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => window.open(img, '_blank')}
+                      className="aspect-square rounded-lg overflow-hidden bg-cafe-800 hover:opacity-80 transition-opacity"
+                    >
+                      <img 
+                        src={img} 
+                        alt={`Imagem ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://placehold.co/200x200/1a1a1a/666?text=Erro'
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             {/* Quality Report */}
             <Card>
               <h3 className="font-display text-lg font-semibold text-cafe-100 mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-gold-500" />
                 Laudo de Qualidade
               </h3>
-              <div className="flex items-center justify-between p-3 bg-cafe-800/50 rounded-lg">
-                <span className="font-mono text-sm text-cafe-400 truncate">
-                  {nft.qualityReportHash}
-                </span>
-                <button
-                  onClick={() => copyToClipboard(nft.qualityReportHash)}
-                  className="p-2 text-cafe-400 hover:text-cafe-100 transition-colors"
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
+              
+              {/* Se tem laudo (URL do Supabase), mostrar de acordo com o tipo */}
+              {nft.metadata?.qualityReport ? (
+                <div className="space-y-3">
+                  {/* Detectar tipo de arquivo pela URL */}
+                  {nft.metadata.qualityReport.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                    // Se for imagem, mostrar preview
+                    <div className="space-y-3">
+                      <div className="rounded-lg overflow-hidden border border-cafe-700">
+                        <img 
+                          src={nft.metadata.qualityReport} 
+                          alt="Laudo de Qualidade"
+                          className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(nft.metadata?.qualityReport, '_blank')}
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/400x300/1a1a1a/666?text=Erro+ao+carregar'
+                          }}
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => window.open(nft.metadata?.qualityReport, '_blank')}
+                        leftIcon={<ExternalLink className="w-4 h-4" />}
+                      >
+                        Abrir em Tela Cheia
+                      </Button>
+                    </div>
+                  ) : (
+                    // Se for PDF ou outro documento
+                    <div className="p-4 bg-cafe-800/50 rounded-lg text-center">
+                      <FileText className="w-12 h-12 text-gold-500 mx-auto mb-2" />
+                      <p className="text-cafe-300 text-sm mb-3">Laudo de Qualidade</p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(nft.metadata?.qualityReport, '_blank')}
+                          leftIcon={<ExternalLink className="w-4 h-4" />}
+                        >
+                          Visualizar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            // Download do arquivo
+                            const link = document.createElement('a')
+                            link.href = nft.metadata?.qualityReport || ''
+                            link.download = `laudo_${nft.lotCode}`
+                            link.target = '_blank'
+                            link.click()
+                          }}
+                        >
+                          Baixar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between p-3 bg-cafe-800/30 rounded-lg">
+                    <span className="font-mono text-xs text-cafe-500 truncate">
+                      ID: {nft.qualityReportHash}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(nft.qualityReportHash)}
+                      className="p-2 text-cafe-400 hover:text-cafe-100 transition-colors"
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 bg-cafe-800/50 rounded-lg">
+                  <span className="font-mono text-sm text-cafe-400 truncate">
+                    {nft.qualityReportHash || 'Não informado'}
+                  </span>
+                  <button
+                    onClick={() => copyToClipboard(nft.qualityReportHash)}
+                    className="p-2 text-cafe-400 hover:text-cafe-100 transition-colors"
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              )}
             </Card>
+
+            {/* Cupping Notes */}
+            {nft.metadata?.cuppingNotes && (
+              <Card>
+                <h3 className="font-display text-lg font-semibold text-cafe-100 mb-4 flex items-center gap-2">
+                  <Coffee className="w-5 h-5 text-gold-500" />
+                  Notas de Degustação
+                </h3>
+                <p className="text-cafe-300 leading-relaxed">
+                  {nft.metadata.cuppingNotes}
+                </p>
+              </Card>
+            )}
+
+            {/* Certifications */}
+            {nft.metadata?.certifications && nft.metadata.certifications.length > 0 && (
+              <Card>
+                <h3 className="font-display text-lg font-semibold text-cafe-100 mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-gold-500" />
+                  Certificações
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {nft.metadata.certifications.map((cert, index) => (
+                    <Badge key={index} variant="gold">
+                      {cert}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            )}
           </motion.div>
 
           {/* Right column - Details */}

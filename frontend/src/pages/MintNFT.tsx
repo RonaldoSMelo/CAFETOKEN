@@ -14,13 +14,13 @@ import {
   ArrowLeft,
   Check,
   AlertCircle,
-  Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { BrowserProvider, Contract, parseEther } from 'ethers'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import { useWallet } from '../context/WalletContext'
+import { supabase } from '../services/supabase'
 
 const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 const CONTRACT_ABI = [
@@ -159,20 +159,101 @@ export default function MintNFT() {
       const signer = await provider.getSigner()
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer)
       
-      // Criar metadata URI simples
-      const tokenURI = `data:application/json,${encodeURIComponent(JSON.stringify({
+      // Upload de imagens para o Supabase Storage
+      let imageUrls: string[] = []
+      let qualityReportUrl = ''
+      
+      // Tentar fazer upload das imagens para o Supabase
+      if (formData.images.length > 0) {
+        toast.loading('Fazendo upload das imagens...', { id: 'mint' })
+        
+        for (let i = 0; i < formData.images.length; i++) {
+          const file = formData.images[i]
+          const fileName = `${formData.lotCode}_${Date.now()}_${i}.${file.name.split('.').pop()}`
+          const filePath = `nfts/${fileName}`
+          
+          try {
+            const { error } = await supabase.storage
+              .from('Images')
+              .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: true,
+              })
+            
+            if (!error) {
+              const { data: urlData } = supabase.storage
+                .from('Images')
+                .getPublicUrl(filePath)
+              imageUrls.push(urlData.publicUrl)
+            }
+          } catch (err) {
+            console.warn('Erro no upload da imagem:', err)
+            // Continuar mesmo se falhar (usar placeholder)
+          }
+        }
+      }
+      
+      // Upload do laudo de qualidade
+      if (formData.qualityReport) {
+        toast.loading('Fazendo upload do laudo...', { id: 'mint' })
+        
+        const file = formData.qualityReport
+        const fileName = `${formData.lotCode}_laudo_${Date.now()}.${file.name.split('.').pop()}`
+        const filePath = `laudos/${fileName}`
+        
+        try {
+          const { error } = await supabase.storage
+            .from('documents')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: true,
+            })
+          
+          if (!error) {
+            const { data: urlData } = supabase.storage
+              .from('documents')
+              .getPublicUrl(filePath)
+            qualityReportUrl = urlData.publicUrl
+          }
+        } catch (err) {
+          console.warn('Erro no upload do laudo:', err)
+        }
+      }
+      
+      toast.loading('Preparando transação...', { id: 'mint' })
+      
+      // Usar a primeira imagem ou placeholder
+      const mainImage = imageUrls.length > 0 
+        ? imageUrls[0]
+        : `https://placehold.co/600x600/1a1a1a/d4af37?text=${encodeURIComponent(formData.lotCode)}`
+      
+      // Criar metadata com URLs do Supabase
+      const metadata = {
         name: `Microlote ${formData.lotCode}`,
         description: formData.description || `Café ${formData.variety} - ${formData.process}`,
+        image: mainImage,
+        images: imageUrls,
+        qualityReport: qualityReportUrl,
+        hasImages: imageUrls.length > 0,
+        imageCount: imageUrls.length,
+        hasQualityReport: !!qualityReportUrl,
+        cuppingNotes: formData.cuppingNotes,
+        certifications: formData.certifications,
+        coordinates: formData.coordinates,
         attributes: [
           { trait_type: 'Variety', value: formData.variety },
           { trait_type: 'Process', value: formData.process },
           { trait_type: 'Weight', value: formData.weightKg },
           { trait_type: 'Farm', value: formData.farmName },
           { trait_type: 'Region', value: formData.region },
+          { trait_type: 'State', value: formData.state },
+          { trait_type: 'Country', value: formData.country },
           { trait_type: 'Altitude', value: formData.altitude },
           { trait_type: 'SCA Score', value: formData.scaScore },
         ]
-      }))}`
+      }
+      
+      const tokenURI = `data:application/json,${encodeURIComponent(JSON.stringify(metadata))}`
       
       // Converter SCA score (86.5 -> 8650)
       const scaScoreInt = Math.round(parseFloat(formData.scaScore || '85') * 100)
@@ -184,6 +265,11 @@ export default function MintNFT() {
       
       toast.loading('Aguardando confirmação no MetaMask...', { id: 'mint' })
       
+      // Hash do laudo (usar um hash simples ou o nome do arquivo)
+      const qualityReportHash = formData.qualityReport 
+        ? `report_${formData.lotCode}_${Date.now()}` 
+        : 'sem_laudo'
+      
       // Chamar função de mint com 0.01 ETH hardcoded
       const tx = await contract.mintCoffeeLot(
         tokenURI,
@@ -191,7 +277,7 @@ export default function MintNFT() {
         parseInt(formData.weightKg) || 30,
         scaScoreInt,
         harvestTimestamp,
-        'QmHash123',
+        qualityReportHash,
         { value: parseEther('0.01') }
       )
       
@@ -446,13 +532,37 @@ export default function MintNFT() {
                   <span className="text-sm text-cafe-400">
                     {formData.qualityReport
                       ? formData.qualityReport.name
-                      : 'Clique para fazer upload do laudo (PDF)'}
+                      : 'Clique para fazer upload do laudo'}
+                  </span>
+                  <span className="text-xs text-cafe-600 mt-1">
+                    PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, TXT (máx. 10MB)
                   </span>
                   <input
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.txt,.csv,.odt,.ods,.rtf"
                     className="hidden"
-                    onChange={e => updateField('qualityReport', e.target.files?.[0] || null)}
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        // Bloquear executáveis
+                        const blockedExtensions = ['.exe', '.bat', '.cmd', '.msi', '.com', '.scr', '.pif', '.js', '.vbs', '.wsf', '.ps1', '.sh']
+                        const fileName = file.name.toLowerCase()
+                        const isBlocked = blockedExtensions.some(ext => fileName.endsWith(ext))
+                        
+                        if (isBlocked) {
+                          alert('Tipo de arquivo não permitido por segurança.')
+                          return
+                        }
+                        
+                        // Verificar tamanho (máx 10MB)
+                        if (file.size > 10 * 1024 * 1024) {
+                          alert('Arquivo muito grande. Máximo 10MB.')
+                          return
+                        }
+                        
+                        updateField('qualityReport', file)
+                      }
+                    }}
                   />
                 </label>
               </div>

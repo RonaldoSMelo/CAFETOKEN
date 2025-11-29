@@ -189,7 +189,7 @@ export async function getNFTByTokenId(tokenId: number) {
 // Storage functions
 export async function uploadImage(file: File, path: string) {
   const { data, error } = await supabase.storage
-    .from('images')
+    .from('Images')
     .upload(path, file, {
       cacheControl: '3600',
       upsert: false,
@@ -200,7 +200,7 @@ export async function uploadImage(file: File, path: string) {
 }
 
 export async function getImageUrl(path: string) {
-  const { data } = supabase.storage.from('images').getPublicUrl(path)
+  const { data } = supabase.storage.from('Images').getPublicUrl(path)
   return data.publicUrl
 }
 
